@@ -1,10 +1,8 @@
-
 import streamlit as st
 import pandas as pd
 from datasets import load_dataset
 import json
 from datetime import datetime
-import os
 import random
 import gspread
 from google.oauth2.service_account import Credentials
@@ -13,7 +11,6 @@ constant_template = """
 Score the similarity of the two images **on a scale of 1 (least similar) to 10 (completely similar)** given the condition[s] below: \n {conditions} \n 
 
 *Note: Identical images that do not meet the condtion[s] should score **higher** than irrelevant images.*
-
 """
 
 def write_to_gsheet(data):
@@ -21,18 +18,12 @@ def write_to_gsheet(data):
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     client = gspread.authorize(creds)
-
     spreadsheet_id = "13bTYTcnvslTKc_fJIun-w-gpDOgSeTluAWDrgmXysng"
     sheet = client.open_by_key(spreadsheet_id).sheet1
-
-    columns = [
-        "user_id", "row_number", "sample_uid", "instruction_version", "instruction", "user_score",
-        "timestamp", "dataset", "split", "pair", "var"
-    ]
-
+    columns = ["user_id", "row_number", "sample_uid", "instruction_version", "instruction", "user_score",
+               "timestamp", "dataset", "split", "pair", "var"]
     if sheet.row_count == 0 or sheet.cell(1, 1).value is None:
         sheet.append_row(columns)
-
     for row in data:
         sheet.append_row([row.get(col, "") for col in columns])
 
@@ -48,19 +39,15 @@ def prepare_evaluation_samples(template_ds, image_ds):
     query_conditions = json.loads(template["query_conditions"])
     logistics = json.loads(template["logistics"])
     pairs = logistics["data-pairs"]
-
     all_samples = []
-    # rnd = random.Random(hash(st.session_state.user_id))
-    rnd = random.Random() 
+    rnd = random.Random()
     for idx, row in enumerate(image_ds):
         for i, (img1_key, img2_key) in enumerate(pairs):
             template_key = rnd.choice(list(query_templates.keys()))
             var = rnd.choice(["variant", "invariant"])
             condition = f"\n - **{query_conditions['color_jittering'][var]}**\n\n"
             instruction = constant_template.format(conditions=condition)
-            # instruction = query_templates[template_key].format(conditions=condition)
             instruction = instruction.replace('Score: <1-10>', '**Score: <1-10>**')
-
             all_samples.append({
                 "dataset": "in100",
                 "split": "colorjitter",
@@ -71,10 +58,8 @@ def prepare_evaluation_samples(template_ds, image_ds):
                 "img2": row[img2_key],
                 "var": var,
                 "instruction": instruction,
-                # "template_version": template_key,
                 "template_version": 'const',
             })
-
     rnd.shuffle(all_samples)
     return all_samples[:20]
 
@@ -85,12 +70,12 @@ if "samples" not in st.session_state:
     st.session_state.samples = prepare_evaluation_samples(template_ds, image_ds)
     st.session_state.current_sample_idx = 0
     st.session_state.responses = {}
+    st.session_state.submitted = False
 
 samples = st.session_state.samples
 sample_idx = st.session_state.current_sample_idx
 sample = samples[sample_idx]
 is_last_sample = sample_idx == len(samples) - 1
-
 
 if "user_id" not in st.session_state:
     st.markdown("🖥️ *Use a desktop browser for best experience*")
@@ -113,7 +98,6 @@ if "user_id" not in st.session_state:
         """)
     user_input = st.text_input("Enter your name or ID (required) and press continue to proceed:", key="user_id_input")
     submit_id = st.button("➡️ Continue")
-
     if submit_id:
         if user_input.strip():
             st.session_state.user_id = user_input.strip()
@@ -124,25 +108,21 @@ if "user_id" not in st.session_state:
     else:
         st.stop()
 else:
-    st.markdown(f"👤 **User ID:** `{st.session_state.user_id}`")    
-    st.warning(f"**Do not refresh page while taking the survey!**")    
-        
+    st.markdown(f"👤 **User ID:** `{st.session_state.user_id}`")
+    st.warning(f"**Do not refresh page while taking the survey!**")
+
 if not is_last_sample:
     st.markdown(f"---\n### Sample {sample_idx + 1} of {len(samples)}")
     st.markdown(f"**Instruction:**\n\n{sample['instruction']}")
-
     cols = st.columns(2)
     with cols[0]:
         st.image(sample["img1"], caption="Image 1", use_container_width=True)
     with cols[1]:
         st.image(sample["img2"], caption="Image 2", use_container_width=True)
-
     st.markdown("**Select your score (1 = low similarity, 10 = high similarity):**")
-
     previous_score = st.session_state.responses.get(sample['uid'], {}).get("user_score")
     if previous_score:
         st.markdown(f"🔁 You previously selected: **{previous_score}**")
-
     score_col = st.columns(10)
     for i, col in enumerate(score_col, start=1):
         with col:
@@ -160,21 +140,43 @@ if not is_last_sample:
                     "pair": sample['pair'],
                     "var": sample["var"]
                 }
-
                 if sample_idx < len(samples) - 1:
                     st.session_state.current_sample_idx += 1
                     st.rerun()
 
+    # Buttons: Back / Skip / Restart
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        if sample_idx > 0 and st.button("⬅️ Back"):
+            st.session_state.current_sample_idx -= 1
+            st.rerun()
+    with col2:
+        if previous_score and sample_idx < len(samples) - 1:
+            if st.button("⏭️ Skip to next sample", key=f"skip_{sample['uid']}"):
+                st.session_state.current_sample_idx += 1
+                st.rerun()
+    with col3:
+        if st.button("🔁 Restart with new samples"):
+            template_ds, image_ds = load_data()
+            st.session_state.samples = prepare_evaluation_samples(template_ds, image_ds)
+            st.session_state.current_sample_idx = 0
+            st.session_state.responses = {}
+            st.session_state.submitted = False
+            st.rerun()
+
+    # Progress bar
+    progress = (sample_idx + 1) / len(samples)
+    st.markdown("---")
+    st.progress(progress, text=f"Progress: {sample_idx + 1} / {len(samples)}")
+
 else:
     st.markdown("## 🎯 Final Step: Submit Your Responses")
     st.info("Please confirm you've completed all evaluations. You can go back and revise if needed.")
-
     col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("⬅️ Back"):
             st.session_state.current_sample_idx -= 1
             st.rerun()
-
     with col2:
         if not st.session_state.get("submitted", False):
             if st.button("✅ Submit All Responses"):
