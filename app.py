@@ -50,7 +50,8 @@ def prepare_evaluation_samples(template_ds, image_ds):
     pairs = logistics["data-pairs"]
 
     all_samples = []
-    rnd = random.Random(42)
+    # rnd = random.Random(hash(st.session_state.user_id))
+    rnd = random.Random() 
     for idx, row in enumerate(image_ds):
         for i, (img1_key, img2_key) in enumerate(pairs):
             template_key = rnd.choice(list(query_templates.keys()))
@@ -77,7 +78,7 @@ def prepare_evaluation_samples(template_ds, image_ds):
     rnd.shuffle(all_samples)
     return all_samples[:20]
 
-st.title("Human Evaluation Interface")
+st.title("PairBench Human Evaluation")
 
 if "samples" not in st.session_state:
     template_ds, image_ds = load_data()
@@ -98,8 +99,9 @@ if "user_id" not in st.session_state:
         st.warning("You must enter a user ID to begin.")
         st.stop()
 else:
-    st.markdown(f"👤 **User ID:** `{st.session_state.user_id}`")
-
+    st.markdown(f"👤 **User ID:** `{st.session_state.user_id}`")    
+    st.warning(f"**Do not refresh page while taking the survey!**")    
+        
 st.markdown(f"---\n### Sample {sample_idx + 1} of {len(samples)}")
 st.markdown(f"**Instruction:**\n\n{sample['instruction']}")
 
@@ -142,12 +144,29 @@ for i, col in enumerate(score_col, start=1):
                 st.session_state.current_sample_idx += 1
                 st.rerun()
 
-
-# Back button
-if sample_idx > 0:
-    if st.button("⬅️ Back"):
-        st.session_state.current_sample_idx -= 1
-        st.rerun()
+# Back + Restart side-by-side
+col1, col2, col3 = st.columns([1, 1, 1])
+with col1:
+    if sample_idx > 0:
+        if st.button("⬅️ Back"):
+            st.session_state.current_sample_idx -= 1
+            st.rerun()
+with col2:
+    # Show skip button only if score already exists
+    if previous_score and sample_idx < len(samples) - 1:
+        if st.button("⏭️ Skip to next sample", key=f"skip_{sample['uid']}"):
+            st.session_state.current_sample_idx += 1
+            st.rerun()
+        
+with col3:
+    if st.button("🔁 Restart with new samples"):
+        template_ds, image_ds = load_data()
+        # Use a new seed for fresh randomness on restart
+        st.session_state.samples = prepare_evaluation_samples(template_ds, image_ds)
+        st.session_state.current_sample_idx = 0
+        st.session_state.responses = {}
+        st.session_state.submitted = False
+        st.rerun()    
         
 progress = (sample_idx + 1) / len(samples)
 st.markdown("---")
