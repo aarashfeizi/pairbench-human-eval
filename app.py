@@ -102,13 +102,14 @@ if "user_id" not in st.session_state:
 
     There are **20 pairs** to score. The instruction is always similar,  
     but the **condition changes per pair** — so please read each one carefully.
+    
+    ✅ **Your job is to follow the condition and give a similarity score from 1 (least similar) to 10 (identical).**
 
     Each instruction includes one of the following **conditions**:
 
     - 🔴 **Variant**: Be sensitive to color jittering — small changes in brightness, contrast, or color **should lower** your similarity score.
     - 🔵 **Invariant**: Ignore color jittering — color differences **should not affect** your similarity score.
 
-    ✅ **Your job is to follow the condition and give a similarity score from 1 (least similar) to 10 (identical).**
     """)
     user_input = st.text_input("Enter a nickname for yourself (required) and press continue to proceed:", key="user_id_input")
     submit_id = st.button("➡️ Continue")
@@ -171,8 +172,8 @@ if not is_last_sample:
                 st.rerun()
     with col3:
         if st.button("🔁 Restart with new samples"):
-            template_ds, image_ds = load_data()
-            st.session_state.samples = prepare_evaluation_samples(template_ds, image_ds)
+            template_ds, image_ds, split_name = load_data()
+            st.session_state.samples = prepare_evaluation_samples(template_ds, image_ds, split_name)
             st.session_state.current_sample_idx = 0
             st.session_state.responses = {}
             st.session_state.submitted = False
