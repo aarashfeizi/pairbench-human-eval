@@ -103,17 +103,25 @@ if "user_id" not in st.session_state:
 
     There are **20 pairs** to score. The instruction is always similar,  
     but the **condition changes per pair** — so please read each one carefully.
-    
+
     ✅ **Your job is to follow the condition and give a similarity score from 1 (least similar) to 10 (highest similarity).**
 
     Each instruction includes one of the following **conditions**:
-
 
     - 🔴 **Variant**: Be sensitive to changes — small variations in **color**, **rotation**, or **perspective** should **lower** your similarity score.
 
     - 🔵 **Invariant**: Ignore such changes — differences in **color**, **rotation**, or **perspective** should **not affect** your similarity score.
 
+    ---
+
+    ❗ **Important:** Your progress will **not** be saved automatically.
+
+    👉 You **must** click the **✅ Submit All Responses** button at the end of the survey  
+    to make sure your responses are recorded.
+
+    If you close or refresh the tab before submitting, **your progress will be lost**.
     """)
+
     user_input = st.text_input("Enter a nickname for yourself (required) and press continue to proceed:", key="user_id_input")
     submit_id = st.button("➡️ Continue")
     if submit_id:
@@ -189,7 +197,7 @@ if not is_last_sample:
 
 else:
     st.markdown("## 🎯 Final Step: Submit Your Responses")
-    st.info("Please confirm you've completed all evaluations. You can go back and revise if needed.")
+    st.warning("Please confirm you've completed all evaluations. You can go back and revise if needed.")
     col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("⬅️ Back"):
