@@ -54,8 +54,12 @@ def save_responses(results_df):
 
 st.title("Human Evaluation Interface")
 
-template_ds, image_ds = load_data()
-samples = prepare_evaluation_samples(template_ds, image_ds)
+# Only prepare samples once per session
+if "samples" not in st.session_state:
+    template_ds, image_ds = load_data()
+    st.session_state.samples = prepare_evaluation_samples(template_ds, image_ds)
+
+samples = st.session_state.samples
 
 user_id = st.text_input("Enter your name or ID (optional)", "")
 
