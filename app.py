@@ -26,7 +26,7 @@ def write_to_gsheet(data):
     sheet = client.open_by_key(spreadsheet_id).sheet1
 
     columns = [
-        "user_id", "sample_uid", "instruction_version", "instruction", "user_score",
+        "user_id", "row_number", "sample_uid", "instruction_version", "instruction", "user_score",
         "timestamp", "dataset", "split", "pair", "var"
     ]
     
@@ -62,6 +62,7 @@ def prepare_evaluation_samples(template_ds, image_ds):
                 "dataset": "in100",
                 "split": "colorjitter",
                 "uid": f"{idx}_{i}",
+                "row_number": f"{idx}",
                 "pair": f"{img1_key}-{img2_key}",
                 "img1": row[img1_key],
                 "img2": row[img2_key],
@@ -107,6 +108,7 @@ for idx, sample in enumerate(samples):
     
     responses.append({
         "user_id": user_id,
+        "row_number": sample['row_number'],
         "sample_uid": sample["uid"],
         "instruction_version": sample["template_version"],
         "instruction": sample["instruction"],
