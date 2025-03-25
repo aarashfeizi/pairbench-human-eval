@@ -8,18 +8,18 @@ import os
 import random
 import gspread
 from google.oauth2.service_account import Credentials
-from google.oauth2 import service_account
 
+constant_template = """
+Just the similarity of the two images **on a scale of 1 (least similar) to 10 (completely similar)** given the condition[s] below: \n {conditions} \n 
+
+***Note: Identical images that do not meet the condtion[s] should still score more than irrelevant images.***
+
+"""
 
 def write_to_gsheet(data):
-    # with open("/Users/aarash/Downloads/lithe-anvil-454816-i7-0b86cbba0629.json") as f:
-    #     creds_dict = json.load(f)
     creds_dict = st.secrets["gcp_service_account"]
-    # print(creds_dict)
-    # print('\n\n')
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-    # print(creds)
     client = gspread.authorize(creds)
 
     spreadsheet_id = "13bTYTcnvslTKc_fJIun-w-gpDOgSeTluAWDrgmXysng"
@@ -29,7 +29,7 @@ def write_to_gsheet(data):
         "user_id", "row_number", "sample_uid", "instruction_version", "instruction", "user_score",
         "timestamp", "dataset", "split", "pair", "var"
     ]
-    
+
     if sheet.row_count == 0 or sheet.cell(1, 1).value is None:
         sheet.append_row(columns)
 
@@ -50,12 +50,14 @@ def prepare_evaluation_samples(template_ds, image_ds):
     pairs = logistics["data-pairs"]
 
     all_samples = []
+    rnd = random.Random(42)
     for idx, row in enumerate(image_ds):
         for i, (img1_key, img2_key) in enumerate(pairs):
-            template_key = random.choice(list(query_templates.keys()))  # v1 to v5
-            var = random.choice(["variant", "invariant"])  # v1 to v5
+            template_key = rnd.choice(list(query_templates.keys()))
+            var = rnd.choice(["variant", "invariant"])
             condition = f"\n - **{query_conditions['color_jittering'][var]}**\n\n"
-            instruction = query_templates[template_key].format(conditions=condition)
+            instruction = constant_template.format(conditions=condition)
+            # instruction = query_templates[template_key].format(conditions=condition)
             instruction = instruction.replace('Score: <1-10>', '**Score: <1-10>**')
 
             all_samples.append({
@@ -68,40 +70,35 @@ def prepare_evaluation_samples(template_ds, image_ds):
                 "img2": row[img2_key],
                 "var": var,
                 "instruction": instruction,
-                "template_version": template_key,
+                # "template_version": template_key,
+                "template_version": 'const',
             })
 
-    random.shuffle(all_samples)
+    rnd.shuffle(all_samples)
     return all_samples[:20]
-
-def save_responses(results_df):
-    os.makedirs("responses", exist_ok=True)
-    path = "responses/user_responses.csv"
-    if os.path.exists(path):
-        results_df.to_csv(path, mode="a", header=False, index=False)
-    else:
-        results_df.to_csv(path, index=False)
 
 st.title("Human Evaluation Interface")
 
-# Only prepare samples once per session
 if "samples" not in st.session_state:
     template_ds, image_ds = load_data()
     st.session_state.samples = prepare_evaluation_samples(template_ds, image_ds)
-
-samples = st.session_state.samples
-
-user_id = st.text_input("Enter your name or ID (optional)", "")
-
-# Track current sample index
-if "current_sample_idx" not in st.session_state:
     st.session_state.current_sample_idx = 0
-
-if "responses" not in st.session_state:
     st.session_state.responses = {}
 
+samples = st.session_state.samples
 sample_idx = st.session_state.current_sample_idx
 sample = samples[sample_idx]
+
+if "user_id" not in st.session_state:
+    user_input = st.text_input("Enter your name or ID (required):", "")
+    if user_input:
+        st.session_state.user_id = user_input
+        st.rerun()
+    else:
+        st.warning("You must enter a user ID to begin.")
+        st.stop()
+else:
+    st.markdown(f"👤 **User ID:** `{st.session_state.user_id}`")
 
 st.markdown(f"---\n### Sample {sample_idx + 1} of {len(samples)}")
 st.markdown(f"**Instruction:**\n\n{sample['instruction']}")
@@ -112,41 +109,83 @@ with cols[0]:
 with cols[1]:
     st.image(sample["img2"], caption="Image 2", use_container_width=True)
 
-score = st.slider(
-    f"Your score for Sample {sample_idx + 1}",
-    -1, 10, step=1,
-    key=f"score_{sample['uid']}",
-    value=st.session_state.responses.get(sample['uid'], {}).get("user_score", -1)
-)
+score_key = f"score_{sample['uid']}"
+default_score = st.session_state.responses.get(sample['uid'], {}).get("user_score", -1)
 
-# Save this response in session state
-st.session_state.responses[sample['uid']] = {
-    "user_id": user_id,
-    "row_number": sample['row_number'],
-    "sample_uid": sample["uid"],
-    "instruction_version": sample["template_version"],
-    "instruction": sample["instruction"],
-    "user_score": score,
-    "timestamp": datetime.utcnow().isoformat(),
-    "dataset": sample['dataset'],
-    "split": sample['split'],
-    "pair": sample['pair'],
-    "var": sample["var"]
-}
+st.markdown("**Select your score (1 = low similarity, 10 = high similarity):**")
 
-# Navigation controls
-col1, col2, col3 = st.columns([1, 1, 2])
-with col1:
-    if st.button("⬅️ Previous", disabled=sample_idx == 0):
+# Show previous score if available
+previous_score = st.session_state.responses.get(sample['uid'], {}).get("user_score")
+if previous_score:
+    st.markdown(f"🔁 You previously selected: **{previous_score}**")
+
+
+score_col = st.columns(10)
+for i, col in enumerate(score_col, start=1):
+    with col:
+        if st.button(str(i), key=f"score_btn_{sample['uid']}_{i}"):
+            st.session_state.responses[sample['uid']] = {
+                "user_id": st.session_state.user_id,
+                "row_number": sample['row_number'],
+                "sample_uid": sample["uid"],
+                "instruction_version": sample["template_version"],
+                "instruction": sample["instruction"],
+                "user_score": i,
+                "timestamp": datetime.utcnow().isoformat(),
+                "dataset": sample['dataset'],
+                "split": sample['split'],
+                "pair": sample['pair'],
+                "var": sample["var"]
+            }
+
+            if sample_idx < len(samples) - 1:
+                st.session_state.current_sample_idx += 1
+                st.rerun()
+
+
+# Back button
+if sample_idx > 0:
+    if st.button("⬅️ Back"):
         st.session_state.current_sample_idx -= 1
-with col2:
-    if st.button("Next ➡️", disabled=sample_idx == len(samples) - 1):
-        st.session_state.current_sample_idx += 1
+        st.rerun()
+        
+progress = (sample_idx + 1) / len(samples)
+st.markdown("---")
+st.progress(progress, text=f"Progress: {sample_idx + 1} / {len(samples)}")
 
-# Final submission
+# Final submission logic
+if "submitted" not in st.session_state:
+    st.session_state.submitted = False
+
+# Submission screen (last sample)
 if sample_idx == len(samples) - 1:
-    if st.button("✅ Submit All Responses"):
-        response_list = list(st.session_state.responses.values())
-        df = pd.DataFrame(response_list)
-        write_to_gsheet(df.to_dict(orient="records"))
-        st.success("Thanks! Your responses have been recorded.")
+    if not st.session_state.submitted:
+        st.markdown("---")
+        st.markdown("### 🎯 Final Step: Submit Your Responses")
+        st.markdown("Please make sure you've reviewed everything before submitting.")
+
+        if st.button("✅ Submit All Responses"):
+            with st.container():
+                with st.spinner("🌀 Submitting your responses... Please wait."):
+                    # This simulates a submission delay (optional, remove if not needed)
+                    response_list = list(st.session_state.responses.values())
+                    df = pd.DataFrame(response_list)
+                    write_to_gsheet(df.to_dict(orient="records"))
+                    st.session_state.submitted = True
+                    st.rerun()  # Rerun to show post-submit UI
+    else:
+        # Grayed out overlay (simple trick: show only this section, no back, no buttons)
+        st.markdown("""
+        <div style='
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 9990;
+        '></div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("## ✅ Your responses have been submitted.")
+        st.success("✅ Thank you! Your responses have been recorded.")
+        st.info("🔒 You may now close the tab or refresh the page to restart.")
+        st.stop()
