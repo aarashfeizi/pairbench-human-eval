@@ -93,34 +93,60 @@ samples = st.session_state.samples
 
 user_id = st.text_input("Enter your name or ID (optional)", "")
 
-responses = []
-for idx, sample in enumerate(samples):
-    st.markdown(f"---\n### Sample {idx + 1}")
-    st.markdown(f"**Instruction:**\n\n{sample['instruction']}")
+# Track current sample index
+if "current_sample_idx" not in st.session_state:
+    st.session_state.current_sample_idx = 0
 
-    cols = st.columns(2)
-    with cols[0]:
-        st.image(sample["img1"], caption="Image 1", use_container_width=True)
-    with cols[1]:
-        st.image(sample["img2"], caption="Image 2", use_container_width=True)
+if "responses" not in st.session_state:
+    st.session_state.responses = {}
 
-    score = st.slider(f"Your score for Sample {idx + 1}", -1, 10, step=1, key=f"score_{idx}")
-    
-    responses.append({
-        "user_id": user_id,
-        "row_number": sample['row_number'],
-        "sample_uid": sample["uid"],
-        "instruction_version": sample["template_version"],
-        "instruction": sample["instruction"],
-        "user_score": score,
-        "timestamp": datetime.utcnow().isoformat(),
-        "dataset": sample['dataset'],
-        "split": sample['split'],
-        "pair": sample['pair'],
-        "var": sample["var"]
-    })
+sample_idx = st.session_state.current_sample_idx
+sample = samples[sample_idx]
 
-if st.button("✅ Submit All Responses"):
-    df = pd.DataFrame(responses)
-    write_to_gsheet(df.to_dict(orient="records"))
-    st.success("Thanks! Your responses have been recorded.")
+st.markdown(f"---\n### Sample {sample_idx + 1} of {len(samples)}")
+st.markdown(f"**Instruction:**\n\n{sample['instruction']}")
+
+cols = st.columns(2)
+with cols[0]:
+    st.image(sample["img1"], caption="Image 1", use_container_width=True)
+with cols[1]:
+    st.image(sample["img2"], caption="Image 2", use_container_width=True)
+
+score = st.slider(
+    f"Your score for Sample {sample_idx + 1}",
+    -1, 10, step=1,
+    key=f"score_{sample['uid']}",
+    value=st.session_state.responses.get(sample['uid'], {}).get("user_score", -1)
+)
+
+# Save this response in session state
+st.session_state.responses[sample['uid']] = {
+    "user_id": user_id,
+    "row_number": sample['row_number'],
+    "sample_uid": sample["uid"],
+    "instruction_version": sample["template_version"],
+    "instruction": sample["instruction"],
+    "user_score": score,
+    "timestamp": datetime.utcnow().isoformat(),
+    "dataset": sample['dataset'],
+    "split": sample['split'],
+    "pair": sample['pair'],
+    "var": sample["var"]
+}
+
+# Navigation controls
+col1, col2, col3 = st.columns([1, 1, 2])
+with col1:
+    if st.button("⬅️ Previous", disabled=sample_idx == 0):
+        st.session_state.current_sample_idx -= 1
+with col2:
+    if st.button("Next ➡️", disabled=sample_idx == len(samples) - 1):
+        st.session_state.current_sample_idx += 1
+
+# Final submission
+if sample_idx == len(samples) - 1:
+    if st.button("✅ Submit All Responses"):
+        response_list = list(st.session_state.responses.values())
+        df = pd.DataFrame(response_list)
+        write_to_gsheet(df.to_dict(orient="records"))
+        st.success("Thanks! Your responses have been recorded.")
