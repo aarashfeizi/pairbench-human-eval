@@ -12,7 +12,7 @@ from google.oauth2.service_account import Credentials
 constant_template = """
 Score the similarity of the two images **on a scale of 1 (least similar) to 10 (completely similar)** given the condition[s] below: \n {conditions} \n 
 
-***Note: Identical images that do not meet the condtion[s] should still score more than irrelevant images.***
+*Note: Identical images that do not meet the condtion[s] should score **higher** than irrelevant images.*
 
 """
 
