@@ -33,7 +33,7 @@ def write_to_gsheet(data):
     for row in data:
         sheet.append_row([row.get(col, "") for col in columns])
 
-@st.cache_data
+# @st.cache_data
 def load_data():
     rnd = random.Random()
     split = rnd.choice(["colorjitter", "rotate", "perspective"])
@@ -104,7 +104,7 @@ if "user_id" not in st.session_state:
     There are **20 pairs** to score. The instruction is always similar,  
     but the **condition changes per pair** — so please read each one carefully.
     
-    ✅ **Your job is to follow the condition and give a similarity score from 1 (least similar) to 10 (identical).**
+    ✅ **Your job is to follow the condition and give a similarity score from 1 (least similar) to 10 (highest similarity).**
 
     Each instruction includes one of the following **conditions**:
 
