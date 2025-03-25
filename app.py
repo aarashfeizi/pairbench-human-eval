@@ -91,12 +91,17 @@ sample_idx = st.session_state.current_sample_idx
 sample = samples[sample_idx]
 
 if "user_id" not in st.session_state:
-    user_input = st.text_input("Enter your name or ID (required):", "")
-    if user_input:
-        st.session_state.user_id = user_input
-        st.rerun()
+    user_input = st.text_input("Enter your name or ID (required):", key="user_id_input")
+    submit_id = st.button("➡️ Continue")
+
+    if submit_id:
+        if user_input.strip():
+            st.session_state.user_id = user_input.strip()
+            st.rerun()
+        else:
+            st.warning("You must enter a user ID to begin.")
+            st.stop()
     else:
-        st.warning("You must enter a user ID to begin.")
         st.stop()
 else:
     st.markdown(f"👤 **User ID:** `{st.session_state.user_id}`")    
