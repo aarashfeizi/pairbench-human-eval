@@ -92,7 +92,7 @@ sample = samples[sample_idx]
 
 if "user_id" not in st.session_state:
     st.markdown("🖥️ *Use a desktop browser for best experience*")
-    user_input = st.text_input("Enter your name or ID (required) and press Continue to proceed:", key="user_id_input")
+    user_input = st.text_input("Enter your name or ID (required) and press ➡️Continue to proceed:", key="user_id_input")
     submit_id = st.button("➡️ Continue")
 
     if submit_id:
