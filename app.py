@@ -104,7 +104,7 @@ if "user_id" not in st.session_state:
 
     ➡️ **Please pay close attention to the condition before scoring.**
     """)
-    user_input = st.text_input("Enter your name or ID (required) and press ➡️Continue to proceed:", key="user_id_input")
+    user_input = st.text_input("Enter your name or ID (required) and press continue to proceed:", key="user_id_input")
     submit_id = st.button("➡️ Continue")
 
     if submit_id:
