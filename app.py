@@ -93,17 +93,22 @@ sample = samples[sample_idx]
 if "user_id" not in st.session_state:
     st.markdown("🖥️ *Use a desktop browser for best experience*")
     st.info("""
-    👀 **Before you begin:**
+        👀 **Before you begin:**
 
-    In each sample, you'll be asked to score the **similarity** between two images.
+        You’ll be rating the **similarity** between image pairs.
 
-    Each instruction includes one of the following **conditions**:
-    
-    - 🔴 **Variant**: Be sensitive to color jittering — small changes in brightness, contrast, or color **should affect** your similarity score.
-    - 🔵 **Invariant**: Ignore color jittering — these differences **should not affect** your similarity score.
+        There are **20 pairs** to score. The instruction is always similar,  
+        but the **condition changes per pair** — so please read each one carefully.
 
-    ➡️ **Please pay close attention to the condition before scoring.**
-    """)
+        Each instruction includes one of the following **conditions**:
+
+        - 🔴 **Variant**: Be sensitive to color jittering — small changes in brightness, contrast, or color **should lower** your similarity score.
+        - 🔵 **Invariant**: Ignore color jittering — color differences **should not affect** your similarity score.
+
+        ✅ **Your job is to follow the condition and give a similarity score from 1 (least similar) to 10 (identical).**
+
+        ⏱️ This should take **just a few minutes** — so please stay focused, and let's begin!
+        """)
     user_input = st.text_input("Enter your name or ID (required) and press continue to proceed:", key="user_id_input")
     submit_id = st.button("➡️ Continue")
 
