@@ -1,3 +1,5 @@
 streamlit
 datasets
 pillow
+gspread
+google-auth
