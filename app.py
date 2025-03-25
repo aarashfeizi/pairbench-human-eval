@@ -6,6 +6,20 @@ import json
 from datetime import datetime
 import os
 import random
+import gspread
+from google.oauth2.service_account import Credentials
+
+def write_to_gsheet(data):
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds_dict = st.secrets["gcp_service_account"]
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    client = gspread.authorize(creds)
+
+    spreadsheet_id = "YOUR_SPREADSHEET_ID_HERE"
+    sheet = client.open_by_key(spreadsheet_id).sheet1
+
+    for row in data:
+        sheet.append_row(list(row.values()))
 
 @st.cache_data
 def load_data():
@@ -85,5 +99,5 @@ for idx, sample in enumerate(samples):
 
 if st.button("✅ Submit All Responses"):
     df = pd.DataFrame(responses)
-    save_responses(df)
+    write_to_gsheet(df.to_dict(orient="records"))
     st.success("Thanks! Your responses have been recorded.")
