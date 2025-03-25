@@ -35,7 +35,8 @@ def write_to_gsheet(data):
 
 @st.cache_data
 def load_data():
-    split = random.choice(["colorjitter", "rotate", "perspective"])
+    rnd = random.Random()
+    split = rnd.choice(["colorjitter", "rotate", "perspective"])
     template_ds = load_dataset("feiziaarash/mmscore", name="templates", split="in100[:100]")
     image_ds = load_dataset("feiziaarash/mmscore", name="in100", split=f"{split}[:100]")
     return template_ds, image_ds, split
@@ -107,8 +108,10 @@ if "user_id" not in st.session_state:
 
     Each instruction includes one of the following **conditions**:
 
-    - 🔴 **Variant**: Be sensitive to color jittering — small changes in brightness, contrast, or color **should lower** your similarity score.
-    - 🔵 **Invariant**: Ignore color jittering — color differences **should not affect** your similarity score.
+
+    - 🔴 **Variant**: Be sensitive to changes — small variations in **color**, **rotation**, or **perspective** should **lower** your similarity score.
+
+    - 🔵 **Invariant**: Ignore such changes — differences in **color**, **rotation**, or **perspective** should **not affect** your similarity score.
 
     """)
     user_input = st.text_input("Enter a nickname for yourself (required) and press continue to proceed:", key="user_id_input")
