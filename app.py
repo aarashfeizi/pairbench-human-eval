@@ -13,6 +13,12 @@ Score the similarity of the two images **on a scale of 1 (least similar) to 10 (
 *Note: Identical images that do not meet the condtion[s] should score **higher** than irrelevant images.*
 """
 
+split2condition = {
+    'rotate': "rotation",
+    'colorjitter': "color_jittering",
+    'perspective': 'perspective'
+}
+
 def write_to_gsheet(data):
     creds_dict = st.secrets["gcp_service_account"]
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -29,11 +35,12 @@ def write_to_gsheet(data):
 
 @st.cache_data
 def load_data():
+    split = random.choice(["colorjitter", "rotate", "perspective"])
     template_ds = load_dataset("feiziaarash/mmscore", name="templates", split="in100[:100]")
-    image_ds = load_dataset("feiziaarash/mmscore", name="in100", split="colorjitter[:100]")
-    return template_ds, image_ds
+    image_ds = load_dataset("feiziaarash/mmscore", name="in100", split=f"{split}[:100]")
+    return template_ds, image_ds, split
 
-def prepare_evaluation_samples(template_ds, image_ds):
+def prepare_evaluation_samples(template_ds, image_ds, split_name):
     template = template_ds[0]
     query_templates = json.loads(template["query_templates"])
     query_conditions = json.loads(template["query_conditions"])
@@ -45,12 +52,12 @@ def prepare_evaluation_samples(template_ds, image_ds):
         for i, (img1_key, img2_key) in enumerate(pairs):
             template_key = rnd.choice(list(query_templates.keys()))
             var = rnd.choice(["variant", "invariant"])
-            condition = f"\n - **{query_conditions['color_jittering'][var]}**\n\n"
+            condition = f"\n - **{query_conditions[split2condition[split_name]][var]}**\n\n"
             instruction = constant_template.format(conditions=condition)
             instruction = instruction.replace('Score: <1-10>', '**Score: <1-10>**')
             all_samples.append({
                 "dataset": "in100",
-                "split": "colorjitter",
+                "split": split_name,  # Record the split used
                 "uid": f"{idx}_{i}",
                 "row_number": f"{idx}",
                 "pair": f"{img1_key}-{img2_key}",
@@ -66,8 +73,8 @@ def prepare_evaluation_samples(template_ds, image_ds):
 st.title("PairBench Human Evaluation")
 
 if "samples" not in st.session_state:
-    template_ds, image_ds = load_data()
-    st.session_state.samples = prepare_evaluation_samples(template_ds, image_ds)
+    template_ds, image_ds, split_name = load_data()
+    st.session_state.samples = prepare_evaluation_samples(template_ds, image_ds, split_name)
     st.session_state.current_sample_idx = 0
     st.session_state.responses = {}
     st.session_state.submitted = False
@@ -79,31 +86,38 @@ is_last_sample = sample_idx == len(samples) - 1
 
 if "user_id" not in st.session_state:
     st.markdown("🖥️ *Use a desktop browser for best experience*")
+    st.markdown("### 📝 Quick Survey: Scoring Image Pairs")
+    st.markdown(
+        "Thank you for participating in this short human evaluation! "
+        "You'll be shown **20 image pairs**, each with a specific instruction. "
+        "Your task is to assign a **similarity score** based on the condition provided."
+    )
+
     st.info("""
-        👀 **Before you begin:**
+    👀 **Before you begin:**
 
-        You’ll be rating the **similarity** between image pairs.
+    ⏱️ This should take **just a few minutes** — so please stay focused, and let's begin!
 
-        There are **20 pairs** to score. The instruction is always similar,  
-        but the **condition changes per pair** — so please read each one carefully.
+    You’ll be rating the **similarity** between image pairs.
 
-        Each instruction includes one of the following **conditions**:
+    There are **20 pairs** to score. The instruction is always similar,  
+    but the **condition changes per pair** — so please read each one carefully.
 
-        - 🔴 **Variant**: Be sensitive to color jittering — small changes in brightness, contrast, or color **should lower** your similarity score.
-        - 🔵 **Invariant**: Ignore color jittering — color differences **should not affect** your similarity score.
+    Each instruction includes one of the following **conditions**:
 
-        ✅ **Your job is to follow the condition and give a similarity score from 1 (least similar) to 10 (identical).**
+    - 🔴 **Variant**: Be sensitive to color jittering — small changes in brightness, contrast, or color **should lower** your similarity score.
+    - 🔵 **Invariant**: Ignore color jittering — color differences **should not affect** your similarity score.
 
-        ⏱️ This should take **just a few minutes** — so please stay focused, and let's begin!
-        """)
-    user_input = st.text_input("Enter your name or ID (required) and press continue to proceed:", key="user_id_input")
+    ✅ **Your job is to follow the condition and give a similarity score from 1 (least similar) to 10 (identical).**
+    """)
+    user_input = st.text_input("Enter a nickname for yourself (required) and press continue to proceed:", key="user_id_input")
     submit_id = st.button("➡️ Continue")
     if submit_id:
         if user_input.strip():
             st.session_state.user_id = user_input.strip()
             st.rerun()
         else:
-            st.warning("You must enter a user ID to begin.")
+            st.warning("You must enter a nickname to begin.")
             st.stop()
     else:
         st.stop()
