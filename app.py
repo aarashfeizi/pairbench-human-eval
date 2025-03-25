@@ -139,12 +139,26 @@ else:
 
 if not is_last_sample:
     st.markdown(f"---\n### Sample {sample_idx + 1} of {len(samples)}")
+    # st.markdown(f"---\n### Sample {sample_idx + 1} of {len(samples)}")
     st.markdown(f"**Instruction:**\n\n{sample['instruction']}")
-    cols = st.columns(2)
-    with cols[0]:
+    
+    layout = st.columns([1, 1, 1])  # Wider left column for instruction
+
+    with layout[0]:
+        template = "**TL;DR Conditions:** \n - **{var} to {split}**"
+        st.markdown(f"{template.format(var=sample['var'].upper(), split=sample['split'])}")
+
+    with layout[1]:
         st.image(sample["img1"], caption="Image 1", use_container_width=True)
-    with cols[1]:
+
+    with layout[2]:
         st.image(sample["img2"], caption="Image 2", use_container_width=True)
+
+    # cols = st.columns(2)
+    # with cols[0]:
+    #     st.image(sample["img1"], caption="Image 1", use_container_width=True)
+    # with cols[1]:
+    #     st.image(sample["img2"], caption="Image 2", use_container_width=True)
     st.markdown("**Select your score (1 = low similarity, 10 = high similarity):**")
     previous_score = st.session_state.responses.get(sample['uid'], {}).get("user_score")
     if previous_score:
