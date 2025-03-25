@@ -91,6 +91,7 @@ sample_idx = st.session_state.current_sample_idx
 sample = samples[sample_idx]
 
 if "user_id" not in st.session_state:
+    st.markdown("🖥️ *Use a desktop browser for best experience*")
     user_input = st.text_input("Enter your name or ID (required):", key="user_id_input")
     submit_id = st.button("➡️ Continue")
 
