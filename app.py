@@ -25,8 +25,16 @@ def write_to_gsheet(data):
     spreadsheet_id = "13bTYTcnvslTKc_fJIun-w-gpDOgSeTluAWDrgmXysng"
     sheet = client.open_by_key(spreadsheet_id).sheet1
 
+    columns = [
+        "user_id", "sample_uid", "instruction_version", "instruction", "user_score",
+        "timestamp", "dataset", "split", "pair", "var"
+    ]
+    
+    if sheet.row_count == 0 or sheet.cell(1, 1).value is None:
+        sheet.append_row(columns)
+
     for row in data:
-        sheet.append_row(list(row.values()))
+        sheet.append_row([row.get(col, "") for col in columns])
 
 @st.cache_data
 def load_data():
@@ -54,7 +62,7 @@ def prepare_evaluation_samples(template_ds, image_ds):
                 "dataset": "in100",
                 "split": "colorjitter",
                 "uid": f"{idx}_{i}",
-                "pair": f"[{img1_key}, {img2_key}]",
+                "pair": f"{img1_key}-{img2_key}",
                 "img1": row[img1_key],
                 "img2": row[img2_key],
                 "var": var,
@@ -63,7 +71,7 @@ def prepare_evaluation_samples(template_ds, image_ds):
             })
 
     random.shuffle(all_samples)
-    return all_samples[:10]
+    return all_samples[:20]
 
 def save_responses(results_df):
     os.makedirs("responses", exist_ok=True)
@@ -96,17 +104,18 @@ for idx, sample in enumerate(samples):
         st.image(sample["img2"], caption="Image 2", use_container_width=True)
 
     score = st.slider(f"Your score for Sample {idx + 1}", -1, 10, step=1, key=f"score_{idx}")
+    
     responses.append({
-        "dataset": sample['dataset'],
-        "split": sample['split'],
-        "timestamp": datetime.utcnow().isoformat(),
         "user_id": user_id,
-        "image-pair": sample['pair'],
         "sample_uid": sample["uid"],
-        "var": sample["var"],
         "instruction_version": sample["template_version"],
         "instruction": sample["instruction"],
         "user_score": score,
+        "timestamp": datetime.utcnow().isoformat(),
+        "dataset": sample['dataset'],
+        "split": sample['split'],
+        "pair": sample['pair'],
+        "var": sample["var"]
     })
 
 if st.button("✅ Submit All Responses"):
