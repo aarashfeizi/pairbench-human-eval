@@ -93,12 +93,16 @@ sample = samples[sample_idx]
 if "user_id" not in st.session_state:
     st.markdown("🖥️ *Use a desktop browser for best experience*")
     st.info("""
-    👀 **Before you begin:**  
-    You'll be asked to rate the similarity of image pairs.  
-    Each task includes a *specific condition* related to **color jittering** —  
-    such as being *variant* or *invariant* to color changes like brightness or contrast.
+    👀 **Before you begin:**
 
-    👉 **Please read the condition carefully** in each sample before scoring.
+    In each sample, you'll be asked to score the **similarity** between two images.
+
+    Each instruction includes one of the following **conditions**:
+    
+    - 🔴 **Variant**: Be sensitive to color jittering — small changes in brightness, contrast, or color **should affect** your similarity score.
+    - 🔵 **Invariant**: Ignore color jittering — these differences **should not affect** your similarity score.
+
+    ➡️ **Please pay close attention to the condition before scoring.**
     """)
     user_input = st.text_input("Enter your name or ID (required) and press ➡️Continue to proceed:", key="user_id_input")
     submit_id = st.button("➡️ Continue")
