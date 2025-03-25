@@ -8,14 +8,21 @@ import os
 import random
 import gspread
 from google.oauth2.service_account import Credentials
+from google.oauth2 import service_account
+
 
 def write_to_gsheet(data):
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    # with open("/Users/aarash/Downloads/lithe-anvil-454816-i7-0b86cbba0629.json") as f:
+    #     creds_dict = json.load(f)
     creds_dict = st.secrets["gcp_service_account"]
+    # print(creds_dict)
+    # print('\n\n')
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    # print(creds)
     client = gspread.authorize(creds)
 
-    spreadsheet_id = "YOUR_SPREADSHEET_ID_HERE"
+    spreadsheet_id = "13bTYTcnvslTKc_fJIun-w-gpDOgSeTluAWDrgmXysng"
     sheet = client.open_by_key(spreadsheet_id).sheet1
 
     for row in data:
@@ -90,11 +97,16 @@ for idx, sample in enumerate(samples):
 
     score = st.slider(f"Your score for Sample {idx + 1}", -1, 10, step=1, key=f"score_{idx}")
     responses.append({
+        "dataset": sample['dataset'],
+        "split": sample['split'],
+        "timestamp": datetime.utcnow().isoformat(),
         "user_id": user_id,
+        "image-pair": sample['pair'],
         "sample_uid": sample["uid"],
+        "var": sample["var"],
         "instruction_version": sample["template_version"],
+        "instruction": sample["instruction"],
         "user_score": score,
-        "timestamp": datetime.utcnow().isoformat()
     })
 
 if st.button("✅ Submit All Responses"):
