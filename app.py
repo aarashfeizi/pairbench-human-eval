@@ -18,6 +18,11 @@ split2condition = {
     'colorjitter': "color_jittering",
     'perspective': 'perspective'
 }
+split2humanreadable = {
+    'rotate': "Rotation",
+    'colorjitter': "Color Difference",
+    'perspective': 'Perspective Difference'
+}
 
 def write_to_gsheet(data):
     creds_dict = st.secrets["gcp_service_account"]
@@ -145,8 +150,10 @@ if not is_last_sample:
     layout = st.columns([1, 1, 1])  # Wider left column for instruction
 
     with layout[0]:
-        template = "**TL;DR Conditions:** \n - **{var} to {split}**"
-        st.markdown(f"{template.format(var=sample['var'].upper(), split=sample['split'])}")
+        variant_string = '**is**' if sample['var'] == 'variant' else 'is **NOT**'
+        template = f"⚡️*Similarity conditions for **this** pair:* \n - *{split2humanreadable[sample['split']]} {variant_string} important*"
+        # st.markdown(f"{template.format(var=sample['var'].upper(), split=sample['split'])}")
+        st.info(f"{template}")
 
     with layout[1]:
         st.image(sample["img1"], caption="Image 1", use_container_width=True)
