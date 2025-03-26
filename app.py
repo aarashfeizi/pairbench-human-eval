@@ -168,7 +168,7 @@ if not is_last_sample:
     #     st.image(sample["img1"], caption="Image 1", use_container_width=True)
     # with cols[1]:
     #     st.image(sample["img2"], caption="Image 2", use_container_width=True)
-    st.markdown("**Select your score (1 = low similarity, 10 = high similarity):**")
+    st.markdown("**Select your score (1 = least similarity, 10 = highest similarity):**")
     previous_score = st.session_state.responses.get(sample['uid'], {}).get("user_score")
     if previous_score:
         st.markdown(f"🔁 You previously selected: **{previous_score}**")
