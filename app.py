@@ -21,7 +21,7 @@ split2condition = {
 split2humanreadable = {
     'rotate': "Rotational difference",
     'colorjitter': "Color difference",
-    'perspective': 'Perspective difference'
+    'perspective': "Perspective difference",
 }
 
 def write_to_gsheet(data):
@@ -147,13 +147,13 @@ if not is_last_sample:
     # st.markdown(f"---\n### Sample {sample_idx + 1} of {len(samples)}")
     st.markdown(f"**Instruction:**\n\n{sample['instruction']}")
     
-    layout = st.columns([1, 1, 1])  # Wider left column for instruction
+    layout = st.columns([1.2, 1, 1])  # Wider left column for instruction
 
     with layout[0]:
         # variant_string = '**is**' if sample['var'] == 'variant' else 'is **NOT**'
         variant_string = '**DECREASES**' if sample['var'] == 'variant' else '**DOES NOT decrease**'
         # second_part_of_string = "**Decrease score if they do not completely match.**" if sample['var'] == 'variant' else '**Ignore differences for final score.**'
-        template = f"⚡️*Similarity conditions for **this** pair:* \n - *{split2humanreadable[sample['split']]} {variant_string} the score.*"
+        template = f"⚡️*Similarity conditions for **this** pair:* \n - *{split2humanreadable[sample['split']]} {variant_string} the score.* \n\n *If the images are different, decrease the score regardless.*"
         # st.markdown(f"{template.format(var=sample['var'].upper(), split=sample['split'])}")
         st.info(f"{template}")
 
