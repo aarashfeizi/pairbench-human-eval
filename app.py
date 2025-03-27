@@ -155,10 +155,11 @@ if not is_last_sample:
     with layout[0]:
         # variant_string = '**is**' if sample['var'] == 'variant' else 'is **NOT**'
         variant_string = '**DECREASES**' if sample['var'] == 'variant' else '**DOES NOT decrease**'
+        function = st.warning if sample['var'] == 'variant' else st.info
         # second_part_of_string = "**Decrease score if they do not completely match.**" if sample['var'] == 'variant' else '**Ignore differences for final score.**'
         template = f"⚡️*Similarity conditions for **this** pair:* \n - *{split2humanreadable[sample['split']]} {variant_string} the score.* \n\n *If the images are different, decrease the score regardless.*"
         # st.markdown(f"{template.format(var=sample['var'].upper(), split=sample['split'])}")
-        st.info(f"{template}")
+        function(f"{template}")
 
     with layout[1]:
         st.image(sample["img1"], caption="Image 1", use_container_width=True)
