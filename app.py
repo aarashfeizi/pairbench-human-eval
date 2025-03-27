@@ -41,10 +41,11 @@ def write_to_gsheet(data):
 # @st.cache_data
 def load_data():
     rnd = random.Random()
-    # split = rnd.choice(["colorjitter", "rotate", "perspective"])
     # split = rnd.choice(["rotate", "perspective"])
-    split = rnd.choice(["perspective"])
+    # split = rnd.choice(["perspective"])
     # split = rnd.choice(["colorjitter"])
+    # split = rnd.choice(["colorjitter", "rotate", "perspective"])
+    split = rnd.choice(["rotate", "perspective"])
     template_ds = load_dataset("feiziaarash/mmscore", name="templates", split="in100[:100]")
     image_ds = load_dataset("feiziaarash/mmscore", name="in100", split=f"{split}[:100]")
     return template_ds, image_ds, split
