@@ -77,7 +77,7 @@ def prepare_evaluation_samples(template_ds, image_ds, split_name):
                 "template_version": 'const',
             })
     rnd.shuffle(all_samples)
-    return all_samples[:20]
+    return all_samples[:30]
 
 st.title("PairBench Human Evaluation")
 
@@ -98,7 +98,7 @@ if "user_id" not in st.session_state:
     st.markdown("### 📝 Quick Survey: Scoring Image Pairs")
     st.markdown(
         "Thank you for participating in this short human evaluation! "
-        "You'll be shown **20 image pairs**, each with a specific instruction. "
+        "You'll be shown **30 image pairs**, each with a specific instruction. "
         "Your task is to assign a **similarity score** based on the condition provided."
     )
 
@@ -109,7 +109,7 @@ if "user_id" not in st.session_state:
 
     You’ll be rating the **similarity** between image pairs.
 
-    There are **20 pairs** to score. The instruction is always similar,  
+    There are **30 pairs** to score. The instruction is always similar,  
     but the **condition changes per pair** — so please read each one carefully.
 
     ✅ **Your job is to follow the condition and give a similarity score from 1 (least similar) to 10 (highest similarity).**
